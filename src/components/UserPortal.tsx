@@ -116,7 +116,7 @@ export function UserPortal({ session, categories, menuItems, participants, selec
 
   return (
     <div className="max-w-[98%] xl:max-w-[1600px] mx-auto w-full mt-4 animate-in fade-in duration-500">
-      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100/50 rounded-3xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm gap-6 relative z-50">
+      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100/50 rounded-3xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm gap-6 relative z-40">
         <div className="flex items-center gap-5 w-full md:w-auto">
           <div className="bg-white p-4 rounded-2xl text-indigo-600 shadow-sm hidden sm:block border border-indigo-100"><User size={28} /></div>
           <div className="w-full">

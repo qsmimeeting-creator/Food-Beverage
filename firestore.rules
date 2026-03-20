@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return true; // Explicitly requested unauthenticated access
+    }
+    
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    
+    function isValidSession() {
+      return hasOnlyAllowedFields(['title', 'status']) &&
+             request.resource.data.title is string &&
+             request.resource.data.status in ['Open', 'Closed'];
+    }
+    
+    function isValidCategory() {
+      return hasOnlyAllowedFields(['sessionId', 'name', 'isRequired']) &&
+             request.resource.data.sessionId is string &&
+             request.resource.data.name is string &&
+             request.resource.data.isRequired is bool;
+    }
+    
+    function isValidMenuItem() {
+      return hasOnlyAllowedFields(['categoryId', 'name']) &&
+             request.resource.data.categoryId is string &&
+             request.resource.data.name is string;
+    }
+    
+    function isValidParticipant() {
+      return hasOnlyAllowedFields(['sessionId', 'name', 'order']) &&
+             request.resource.data.sessionId is string &&
+             request.resource.data.name is string &&
+             (!('order' in request.resource.data) || request.resource.data.order is number);
+    }
+    
+    function isValidSelection() {
+      return hasOnlyAllowedFields(['participantId', 'categoryId', 'menuItemId', 'note']) &&
+             request.resource.data.participantId is string &&
+             request.resource.data.categoryId is string &&
+             request.resource.data.menuItemId is string &&
+             (!('note' in request.resource.data) || request.resource.data.note is string);
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidSession();
+      allow delete: if isAuthenticated();
+    }
+    match /categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidCategory();
+      allow delete: if isAuthenticated();
+    }
+    match /menuItems/{menuItemId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidMenuItem();
+      allow delete: if isAuthenticated();
+    }
+    match /participants/{participantId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidParticipant();
+      allow delete: if isAuthenticated();
+    }
+    match /selections/{selectionId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidSelection();
+      allow delete: if isAuthenticated();
+    }
+  }
+}

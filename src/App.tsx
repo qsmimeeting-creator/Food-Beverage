@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Coffee, Settings, LogOut, ClipboardList, Users, Printer, Edit, CheckCircle, X } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { AdminMenuManager } from './components/AdminMenuManager';
@@ -6,8 +6,10 @@ import { AdminUserManager } from './components/AdminUserManager';
 import { AdminSummary } from './components/AdminSummary';
 import { PrintPreview } from './components/PrintPreview';
 import { UserPortal } from './components/UserPortal';
+import { db } from './firebase';
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
-// --- Mock Data ---
+// --- Mock Data (Used for initial seeding if DB is empty) ---
 const initialSession = { id: 's1', title: 'สั่งอาหารมื้อเที่ยง', status: 'Open' };
 const initialCategories = [
   { id: 'c1', sessionId: 's1', name: 'อาหารหลัก', isRequired: true },
@@ -53,7 +55,6 @@ const initialParticipants = [
   { id: 'p30', sessionId: 's1', name: 'การเงิน 4' },
   { id: 'p31', sessionId: 's1', name: 'แม่บ้าน' }
 ];
-const initialSelections = [];
 
 function SidebarBtn({ active, onClick, icon, text }) {
   return (
@@ -74,7 +75,7 @@ function AdminDashboard({
   onAddCategory, onDeleteCategory, onUpdateCategory, onAddMenuItem, onDeleteMenuItem, onUpdateMenuItem, onAddParticipant, onDeleteParticipant, onMoveParticipant, onUpdateParticipant
 }) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [tempTitle, setTempTitle] = useState(session.title);
+  const [tempTitle, setTempTitle] = useState(session?.title || '');
 
   const handleSaveTitle = () => {
     if (tempTitle.trim()) {
@@ -82,6 +83,8 @@ function AdminDashboard({
       setIsEditingTitle(false);
     }
   };
+
+  if (!session) return null;
 
   return (
     <div className="flex flex-col md:flex-row gap-8 animate-in fade-in duration-500">
@@ -178,79 +181,168 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   
-  const [session, setSession] = useState(initialSession);
-  const [categories, setCategories] = useState(initialCategories);
-  const [menuItems, setMenuItems] = useState(initialMenuItems);
-  const [participants, setParticipants] = useState(initialParticipants);
-  const [selections, setSelections] = useState(initialSelections);
+  const [session, setSession] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [participants, setParticipants] = useState([]);
+  const [selections, setSelections] = useState([]);
 
   const [adminTab, setAdminTab] = useState('menu');
   const [isPrintMode, setIsPrintMode] = useState(false);
 
-  const handleUpdateSession = (updates) => {
-    setSession({ ...session, ...updates });
-  };
-
-  const handleSaveSelection = (participantId, newSelections) => {
-    setSelections(prev => {
-      const filteredOutOld = prev.filter(s => s.participantId !== participantId);
-      return [...filteredOutOld, ...newSelections];
+  useEffect(() => {
+    const unsubSession = onSnapshot(doc(db, 'sessions', 's1'), (docSnap) => {
+      if (docSnap.exists()) {
+        setSession({ id: docSnap.id, ...docSnap.data() });
+      } else {
+        // Seed initial data if not exists
+        setDoc(doc(db, 'sessions', 's1'), { title: initialSession.title, status: initialSession.status });
+        initialCategories.forEach(c => setDoc(doc(db, 'categories', c.id), { sessionId: c.sessionId, name: c.name, isRequired: c.isRequired }));
+        initialMenuItems.forEach(m => setDoc(doc(db, 'menuItems', m.id), { categoryId: m.categoryId, name: m.name }));
+        initialParticipants.forEach((p, i) => setDoc(doc(db, 'participants', p.id), { sessionId: p.sessionId, name: p.name, order: i }));
+      }
     });
+
+    const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    const unsubMenuItems = onSnapshot(collection(db, 'menuItems'), (snapshot) => {
+      setMenuItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    const unsubParticipants = onSnapshot(collection(db, 'participants'), (snapshot) => {
+      const parts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      parts.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+      setParticipants(parts);
+    });
+
+    const unsubSelections = onSnapshot(collection(db, 'selections'), (snapshot) => {
+      setSelections(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    return () => {
+      unsubSession();
+      unsubCategories();
+      unsubMenuItems();
+      unsubParticipants();
+      unsubSelections();
+    };
+  }, []);
+
+  const handleUpdateSession = async (updates) => {
+    await updateDoc(doc(db, 'sessions', 's1'), updates);
   };
 
-  const handleBulkSaveSelections = (newAllSelections) => {
-    setSelections(newAllSelections);
+  const handleSaveSelection = async (participantId, newSelections) => {
+    const batch = writeBatch(db);
+    
+    // Delete old selections for this participant
+    const oldSelections = selections.filter(s => s.participantId === participantId);
+    oldSelections.forEach(s => {
+      batch.delete(doc(db, 'selections', s.id));
+    });
+
+    // Add new selections
+    newSelections.forEach(s => {
+      batch.set(doc(db, 'selections', s.id), {
+        participantId: s.participantId,
+        categoryId: s.categoryId,
+        menuItemId: s.menuItemId,
+        note: s.note || ''
+      });
+    });
+
+    await batch.commit();
   };
 
-  const handleAddCategory = (name, isRequired) => {
+  const handleBulkSaveSelections = async (newAllSelections) => {
+    const batch = writeBatch(db);
+    
+    // Delete all old selections
+    selections.forEach(s => {
+      batch.delete(doc(db, 'selections', s.id));
+    });
+
+    // Add new selections
+    newAllSelections.forEach(s => {
+      batch.set(doc(db, 'selections', s.id), {
+        participantId: s.participantId,
+        categoryId: s.categoryId,
+        menuItemId: s.menuItemId,
+        note: s.note || ''
+      });
+    });
+
+    await batch.commit();
+  };
+
+  const handleAddCategory = async (name, isRequired) => {
     if (!name) return;
-    setCategories([...categories, { id: Date.now().toString(), sessionId: session.id, name, isRequired }]);
+    const newId = Date.now().toString();
+    await setDoc(doc(db, 'categories', newId), { sessionId: 's1', name, isRequired });
   };
 
-  const handleDeleteCategory = (id) => {
-    setCategories(categories.filter(c => c.id !== id));
-    setMenuItems(menuItems.filter(m => m.categoryId !== id));
-    setSelections(selections.filter(s => s.categoryId !== id));
+  const handleDeleteCategory = async (id) => {
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'categories', id));
+    
+    menuItems.filter(m => m.categoryId === id).forEach(m => {
+      batch.delete(doc(db, 'menuItems', m.id));
+    });
+    
+    selections.filter(s => s.categoryId === id).forEach(s => {
+      batch.delete(doc(db, 'selections', s.id));
+    });
+
+    await batch.commit();
   };
 
-  const handleUpdateCategory = (id, newName) => {
-    setCategories(categories.map(c => c.id === id ? { ...c, name: newName } : c));
+  const handleUpdateCategory = async (id, newName) => {
+    await updateDoc(doc(db, 'categories', id), { name: newName });
   };
 
-  const handleAddMenuItem = (categoryId, name) => {
+  const handleAddMenuItem = async (categoryId, name) => {
     if (!name) return;
-    setMenuItems([...menuItems, { id: Date.now().toString(), categoryId, name }]);
+    const newId = Date.now().toString();
+    await setDoc(doc(db, 'menuItems', newId), { categoryId, name });
   };
 
-  const handleDeleteMenuItem = (id) => {
-    setMenuItems(menuItems.filter(m => m.id !== id));
+  const handleDeleteMenuItem = async (id) => {
+    await deleteDoc(doc(db, 'menuItems', id));
   };
 
-  const handleUpdateMenuItem = (id, newName) => {
-    setMenuItems(menuItems.map(m => m.id === id ? { ...m, name: newName } : m));
+  const handleUpdateMenuItem = async (id, newName) => {
+    await updateDoc(doc(db, 'menuItems', id), { name: newName });
   };
 
-  const handleAddParticipant = (name) => {
+  const handleAddParticipant = async (name) => {
     if (!name) return;
-    setParticipants([...participants, { id: Date.now().toString(), sessionId: session.id, name }]);
+    const newId = Date.now().toString();
+    await setDoc(doc(db, 'participants', newId), { sessionId: 's1', name, order: participants.length });
   };
 
-  const handleDeleteParticipant = (id) => {
-    setParticipants(participants.filter(p => p.id !== id));
+  const handleDeleteParticipant = async (id) => {
+    await deleteDoc(doc(db, 'participants', id));
   };
 
-  const handleMoveParticipant = (index, direction) => {
+  const handleMoveParticipant = async (index, direction) => {
     const newParticipants = [...participants];
     if (direction === 'up' && index > 0) {
       [newParticipants[index - 1], newParticipants[index]] = [newParticipants[index], newParticipants[index - 1]];
     } else if (direction === 'down' && index < newParticipants.length - 1) {
       [newParticipants[index + 1], newParticipants[index]] = [newParticipants[index], newParticipants[index + 1]];
     }
-    setParticipants(newParticipants);
+    
+    const batch = writeBatch(db);
+    newParticipants.forEach((p, i) => {
+      batch.update(doc(db, 'participants', p.id), { order: i });
+    });
+    await batch.commit();
   };
 
-  const handleUpdateParticipant = (id, newName) => {
-    setParticipants(participants.map(p => p.id === id ? { ...p, name: newName } : p));
+  const handleUpdateParticipant = async (id, newName) => {
+    await updateDoc(doc(db, 'participants', id), { name: newName });
   };
 
   const handleAdminLogin = () => {
@@ -317,7 +409,7 @@ export default function App() {
               </div>
               ยืนยันตัวตน (Admin)
             </h3>
-            <p className="text-base text-slate-500 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">รหัสผ่านสำหรับทดสอบคือ: <strong className="text-indigo-600 text-lg ml-1">1234</strong></p>
+            <p className="text-base text-slate-500 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">กรุณาใส่รหัสผ่านเพื่อเข้าสู่ระบบผู้ดูแล</p>
             <input
               type="password"
               placeholder="ใส่รหัสผ่าน..."

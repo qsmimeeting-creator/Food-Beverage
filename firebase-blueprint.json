@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "Session": {
+      "title": "Session",
+      "description": "An ordering session",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "status": { "type": "string", "enum": ["Open", "Closed"] }
+      },
+      "required": ["title", "status"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A food category",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "name": { "type": "string" },
+        "isRequired": { "type": "boolean" }
+      },
+      "required": ["sessionId", "name", "isRequired"]
+    },
+    "MenuItem": {
+      "title": "MenuItem",
+      "description": "A food item",
+      "type": "object",
+      "properties": {
+        "categoryId": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["categoryId", "name"]
+    },
+    "Participant": {
+      "title": "Participant",
+      "description": "A person ordering",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "name": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["sessionId", "name"]
+    },
+    "Selection": {
+      "title": "Selection",
+      "description": "A user's food choice",
+      "type": "object",
+      "properties": {
+        "participantId": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "menuItemId": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "required": ["participantId", "categoryId", "menuItemId"]
+    }
+  },
+  "firestore": {
+    "/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/Session" },
+      "description": "Ordering sessions"
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "Food categories"
+    },
+    "/menuItems/{menuItemId}": {
+      "schema": { "$ref": "#/entities/MenuItem" },
+      "description": "Menu items"
+    },
+    "/participants/{participantId}": {
+      "schema": { "$ref": "#/entities/Participant" },
+      "description": "Participants"
+    },
+    "/selections/{selectionId}": {
+      "schema": { "$ref": "#/entities/Selection" },
+      "description": "User selections"
+    }
+  }
+}
