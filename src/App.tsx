@@ -89,7 +89,7 @@ function AdminDashboard({
   if (!session) return null;
 
   return (
-    <div className="max-w-[1600px] mx-auto w-full flex flex-col gap-8 animate-in fade-in duration-500">
+    <div className="max-w-[1800px] mx-auto w-full flex flex-col gap-8 animate-in fade-in duration-500">
       {/* Top Header Section */}
       <div className="bg-white rounded-3xl shadow-sm p-6 md:p-8 border border-slate-200/60 flex flex-col lg:flex-row items-center justify-between gap-8">
         <div className="flex flex-col sm:flex-row items-center gap-6 w-full lg:w-auto">
@@ -454,7 +454,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="max-w-[1600px] mx-auto p-4 md:p-8 mt-4">
+      <main className="max-w-[1800px] mx-auto p-4 md:p-8 mt-4">
         {role === 'admin' ? (
           <AdminDashboard 
             session={session}

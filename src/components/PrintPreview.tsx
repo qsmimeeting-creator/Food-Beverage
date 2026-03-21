@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { FileText, Printer, Download, Loader2 } from 'lucide-react';
+import { FileText, Printer } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 export function PrintPreview({ session, categories, menuItems, participants, selections, onClose }) {
   const [printTitle, setPrintTitle] = useState('สรุปรายการสั่งอาหารและเครื่องดื่ม');
   const [printSubtitle, setPrintSubtitle] = useState(`รอบ: ${session.title}`);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const printRef = useRef(null);
 
   const [colWidths, setColWidths] = useState({});
@@ -21,58 +18,6 @@ export function PrintPreview({ session, categories, menuItems, participants, sel
         icon: '💡',
         duration: 6000,
       });
-    }
-  };
-
-  const handleDownloadPdf = async () => {
-    if (!printRef.current) return;
-    
-    setIsGeneratingPdf(true);
-    const toastId = toast.loading('กำลังสร้างไฟล์ PDF...');
-    
-    try {
-      // Temporarily hide elements that shouldn't be in PDF if any
-      // Capture the element
-      const canvas = await html2canvas(printRef.current, {
-        scale: 2, // Higher scale for better quality
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      
-      // Determine orientation based on aspect ratio
-      const orientation = canvas.width > canvas.height ? 'l' : 'p';
-      const pdf = new jsPDF(orientation, 'mm', 'a4');
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const ratio = imgProps.width / imgProps.height;
-      
-      let finalWidth = pdfWidth - 20; // 10mm margin on each side
-      let finalHeight = finalWidth / ratio;
-      
-      // If height exceeds page height, scale down
-      if (finalHeight > pdfHeight - 20) {
-        finalHeight = pdfHeight - 20;
-        finalWidth = finalHeight * ratio;
-      }
-      
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = 10; // 10mm top margin
-      
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-      pdf.save(`${printTitle || 'summary'}.pdf`);
-      
-      toast.success('ดาวน์โหลด PDF สำเร็จ', { id: toastId });
-    } catch (error) {
-      console.error('PDF Generation Error:', error);
-      toast.error('เกิดข้อผิดพลาดในการสร้าง PDF', { id: toastId });
-    } finally {
-      setIsGeneratingPdf(false);
     }
   };
 
@@ -157,14 +102,6 @@ export function PrintPreview({ session, categories, menuItems, participants, sel
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <button onClick={onClose} className="flex-1 sm:flex-none px-6 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 text-base font-semibold text-slate-600 transition-all shadow-sm hover:shadow">กลับ</button>
-          <button 
-            onClick={handleDownloadPdf} 
-            disabled={isGeneratingPdf}
-            className="flex-1 sm:flex-none px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 text-base font-semibold flex justify-center items-center gap-2 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isGeneratingPdf ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
-            PDF
-          </button>
           <button onClick={handlePrint} className="flex-1 sm:flex-none px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-base font-semibold flex justify-center items-center gap-2 transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5">
             <Printer size={20} /> สั่งพิมพ์
           </button>
