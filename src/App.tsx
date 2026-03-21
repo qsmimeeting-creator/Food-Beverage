@@ -197,18 +197,22 @@ export default function App() {
       } else {
         // Seed initial data if not exists
         setDoc(doc(db, 'sessions', 's1'), { title: initialSession.title, status: initialSession.status });
-        initialCategories.forEach(c => setDoc(doc(db, 'categories', c.id), { sessionId: c.sessionId, name: c.name, isRequired: c.isRequired }));
-        initialMenuItems.forEach(m => setDoc(doc(db, 'menuItems', m.id), { categoryId: m.categoryId, name: m.name }));
+        initialCategories.forEach((c, i) => setDoc(doc(db, 'categories', c.id), { sessionId: c.sessionId, name: c.name, isRequired: c.isRequired, createdAt: Date.now() + i }));
+        initialMenuItems.forEach((m, i) => setDoc(doc(db, 'menuItems', m.id), { categoryId: m.categoryId, name: m.name, createdAt: Date.now() + i }));
         initialParticipants.forEach((p, i) => setDoc(doc(db, 'participants', p.id), { sessionId: p.sessionId, name: p.name, order: i }));
       }
     });
 
     const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
-      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      cats.sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0));
+      setCategories(cats);
     });
 
     const unsubMenuItems = onSnapshot(collection(db, 'menuItems'), (snapshot) => {
-      setMenuItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      items.sort((a: any, b: any) => (a.createdAt || 0) - (b.createdAt || 0));
+      setMenuItems(items);
     });
 
     const unsubParticipants = onSnapshot(collection(db, 'participants'), (snapshot) => {
@@ -280,22 +284,28 @@ export default function App() {
   const handleAddCategory = async (name, isRequired) => {
     if (!name) return;
     const newId = Date.now().toString();
-    await setDoc(doc(db, 'categories', newId), { sessionId: 's1', name, isRequired });
+    await setDoc(doc(db, 'categories', newId), { sessionId: 's1', name, isRequired, createdAt: Date.now() });
   };
 
   const handleDeleteCategory = async (id) => {
-    const batch = writeBatch(db);
-    batch.delete(doc(db, 'categories', id));
-    
-    menuItems.filter(m => m.categoryId === id).forEach(m => {
-      batch.delete(doc(db, 'menuItems', m.id));
-    });
-    
-    selections.filter(s => s.categoryId === id).forEach(s => {
-      batch.delete(doc(db, 'selections', s.id));
-    });
+    try {
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'categories', id));
+      
+      menuItems.filter(m => m.categoryId === id).forEach(m => {
+        batch.delete(doc(db, 'menuItems', m.id));
+      });
+      
+      selections.filter(s => s.categoryId === id).forEach(s => {
+        batch.delete(doc(db, 'selections', s.id));
+      });
 
-    await batch.commit();
+      await batch.commit();
+      toast.success('ลบหมวดหมู่เรียบร้อยแล้ว');
+    } catch (error) {
+      console.error('Delete category error:', error);
+      toast.error('ไม่สามารถลบหมวดหมู่ได้');
+    }
   };
 
   const handleUpdateCategory = async (id, newName) => {
@@ -305,11 +315,17 @@ export default function App() {
   const handleAddMenuItem = async (categoryId, name) => {
     if (!name) return;
     const newId = Date.now().toString();
-    await setDoc(doc(db, 'menuItems', newId), { categoryId, name });
+    await setDoc(doc(db, 'menuItems', newId), { categoryId, name, createdAt: Date.now() });
   };
 
   const handleDeleteMenuItem = async (id) => {
-    await deleteDoc(doc(db, 'menuItems', id));
+    try {
+      await deleteDoc(doc(db, 'menuItems', id));
+      toast.success('ลบเมนูเรียบร้อยแล้ว');
+    } catch (error) {
+      console.error('Delete menu item error:', error);
+      toast.error('ไม่สามารถลบเมนูได้');
+    }
   };
 
   const handleUpdateMenuItem = async (id, newName) => {

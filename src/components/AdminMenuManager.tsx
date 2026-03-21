@@ -11,6 +11,8 @@ export function AdminMenuManager({ categories, menuItems, onAddCategory, onDelet
 
   const [editingItemId, setEditingItemId] = useState(null);
   const [tempItemName, setTempItemName] = useState('');
+  const [deletingCatId, setDeletingCatId] = useState(null);
+  const [deletingItemId, setDeletingItemId] = useState(null);
 
   const saveEditCategory = (id) => {
     if (tempCatName.trim()) {
@@ -65,24 +67,40 @@ export function AdminMenuManager({ categories, menuItems, onAddCategory, onDelet
                       {cat.isRequired && <span className="text-xs bg-rose-100 text-rose-700 px-3 py-1.5 rounded-full font-semibold tracking-wide">บังคับเลือก</span>}
                     </h3>
                     <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => { setEditingCatId(cat.id); setTempCatName(cat.name); }} 
-                        className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded-xl transition-colors"
-                        title="แก้ไขชื่อหมวดหมู่"
-                      >
-                        <Edit size={20} />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (window.confirm(`คุณแน่ใจหรือไม่ที่จะลบหมวดหมู่ "${cat.name}" พร้อมเมนูทั้งหมดข้างใน?`)) {
-                            onDeleteCategory(cat.id);
-                          }
-                        }} 
-                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition-colors"
-                        title="ลบหมวดหมู่นี้"
-                      >
-                        <Trash2 size={20} />
-                      </button>
+                      {deletingCatId === cat.id ? (
+                        <div className="flex items-center gap-2 bg-rose-50 p-1 rounded-xl border border-rose-100 animate-in slide-in-from-right-2">
+                          <span className="text-xs font-bold text-rose-600 px-2">ลบ?</span>
+                          <button 
+                            onClick={() => { onDeleteCategory(cat.id); setDeletingCatId(null); }}
+                            className="bg-rose-600 text-white p-2 rounded-lg hover:bg-rose-700 transition-colors"
+                          >
+                            <CheckCircle size={18} />
+                          </button>
+                          <button 
+                            onClick={() => setDeletingCatId(null)}
+                            className="bg-slate-200 text-slate-600 p-2 rounded-lg hover:bg-slate-300 transition-colors"
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => { setEditingCatId(cat.id); setTempCatName(cat.name); }} 
+                            className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded-xl transition-colors"
+                            title="แก้ไขชื่อหมวดหมู่"
+                          >
+                            <Edit size={20} />
+                          </button>
+                          <button 
+                            onClick={() => setDeletingCatId(cat.id)} 
+                            className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition-colors"
+                            title="ลบหมวดหมู่นี้"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </>
                 )}
@@ -109,17 +127,40 @@ export function AdminMenuManager({ categories, menuItems, onAddCategory, onDelet
                     ) : (
                       <>
                         <span className="text-base font-medium text-slate-700">{item.name}</span>
-                        <div className="flex items-center gap-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => { setEditingItemId(item.id); setTempItemName(item.name); }}
-                            className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg transition-colors"
-                            title="แก้ไขชื่อเมนู"
-                          >
-                            <Edit size={18} />
-                          </button>
-                          <button onClick={() => onDeleteMenuItem(item.id)} className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition-colors" title="ลบเมนูนี้">
-                            <Trash2 size={18} />
-                          </button>
+                        <div className="flex items-center gap-2">
+                          {deletingItemId === item.id ? (
+                            <div className="flex items-center gap-2 bg-rose-50 p-1 rounded-lg border border-rose-100 animate-in slide-in-from-right-1">
+                              <button 
+                                onClick={() => { onDeleteMenuItem(item.id); setDeletingItemId(null); }}
+                                className="bg-rose-600 text-white p-1.5 rounded-md hover:bg-rose-700 transition-colors"
+                              >
+                                <CheckCircle size={16} />
+                              </button>
+                              <button 
+                                onClick={() => setDeletingItemId(null)}
+                                className="bg-slate-200 text-slate-600 p-1.5 rounded-md hover:bg-slate-300 transition-colors"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => { setEditingItemId(item.id); setTempItemName(item.name); }}
+                                className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg transition-colors"
+                                title="แก้ไขชื่อเมนู"
+                              >
+                                <Edit size={18} />
+                              </button>
+                              <button 
+                                onClick={() => setDeletingItemId(item.id)} 
+                                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition-colors" 
+                                title="ลบเมนูนี้"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </>
                     )}
@@ -134,16 +175,22 @@ export function AdminMenuManager({ categories, menuItems, onAddCategory, onDelet
                   onChange={e => setNewItemNames({...newItemNames, [cat.id]: e.target.value})}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      onAddMenuItem(cat.id, newItemNames[cat.id]);
-                      setNewItemNames({...newItemNames, [cat.id]: ''});
+                      const name = (newItemNames[cat.id] || '').trim();
+                      if (name) {
+                        onAddMenuItem(cat.id, name);
+                        setNewItemNames({...newItemNames, [cat.id]: ''});
+                      }
                     }
                   }}
                   maxLength={50}
                 />
                 <button 
                   onClick={() => {
-                    onAddMenuItem(cat.id, newItemNames[cat.id]);
-                    setNewItemNames({...newItemNames, [cat.id]: ''});
+                    const name = (newItemNames[cat.id] || '').trim();
+                    if (name) {
+                      onAddMenuItem(cat.id, name);
+                      setNewItemNames({...newItemNames, [cat.id]: ''});
+                    }
                   }}
                   className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-base font-medium hover:bg-indigo-700 flex justify-center items-center gap-2 w-full sm:w-auto whitespace-nowrap shadow-sm hover:shadow transition-all"
                 >
@@ -159,6 +206,15 @@ export function AdminMenuManager({ categories, menuItems, onAddCategory, onDelet
           <input 
             type="text" placeholder="ชื่อหมวดหมู่ใหม่..." className="border border-slate-200 bg-white rounded-xl px-4 py-3 text-base flex-grow w-full focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
             value={newCatName} onChange={e => setNewCatName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const name = newCatName.trim();
+                if (name) {
+                  onAddCategory(name, newCatReq);
+                  setNewCatName('');
+                }
+              }
+            }}
             maxLength={50}
           />
           <div className="flex items-center justify-between w-full sm:w-auto gap-6">
@@ -167,7 +223,13 @@ export function AdminMenuManager({ categories, menuItems, onAddCategory, onDelet
               บังคับเลือก
             </label>
             <button 
-              onClick={() => { onAddCategory(newCatName, newCatReq); setNewCatName(''); }}
+              onClick={() => { 
+                const name = newCatName.trim();
+                if (name) {
+                  onAddCategory(name, newCatReq);
+                  setNewCatName('');
+                }
+              }}
               className="bg-slate-800 text-white px-6 py-3 rounded-xl text-base font-medium hover:bg-slate-700 whitespace-nowrap shadow-sm hover:shadow transition-all"
             >
               สร้างหมวด
