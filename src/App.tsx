@@ -56,12 +56,14 @@ const initialParticipants = [
   { id: 'p31', sessionId: 's1', name: 'แม่บ้าน' }
 ];
 
-function SidebarBtn({ active, onClick, icon, text }) {
+function NavBtn({ active, onClick, icon, text }) {
   return (
     <button 
       onClick={onClick}
-      className={`flex-shrink-0 md:w-full flex items-center gap-4 px-5 py-3.5 text-base font-semibold rounded-2xl transition-all duration-200 whitespace-nowrap ${
-        active ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100/50' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+      className={`flex items-center gap-2 px-6 py-3 text-base font-bold rounded-xl transition-all duration-200 whitespace-nowrap ${
+        active 
+          ? 'bg-white text-indigo-700 shadow-sm border border-indigo-100' 
+          : 'text-slate-500 hover:bg-white/50 hover:text-slate-800 border border-transparent'
       }`}
     >
       {icon} {text}
@@ -87,68 +89,67 @@ function AdminDashboard({
   if (!session) return null;
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 animate-in fade-in duration-500">
-      <div className="w-full md:w-80 flex-shrink-0">
-        <div className="bg-white rounded-3xl shadow-sm p-6 border border-slate-200/60 sticky top-24">
-          <div className="mb-8 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
-            <div className="flex items-center justify-between mb-3">
+    <div className="max-w-[1600px] mx-auto w-full flex flex-col gap-8 animate-in fade-in duration-500">
+      {/* Top Header Section */}
+      <div className="bg-white rounded-3xl shadow-sm p-6 md:p-8 border border-slate-200/60 flex flex-col lg:flex-row items-center justify-between gap-8">
+        <div className="flex flex-col sm:flex-row items-center gap-6 w-full lg:w-auto">
+          <div className="flex flex-col items-center sm:items-start">
+            <div className="flex items-center gap-3 mb-1">
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">รอบปัจจุบัน</h2>
               {!isEditingTitle && (
                 <button 
                   onClick={() => { setIsEditingTitle(true); setTempTitle(session.title); }} 
-                  className="text-slate-400 hover:text-indigo-600 transition-colors p-2 hover:bg-indigo-50 rounded-xl"
+                  className="text-slate-400 hover:text-indigo-600 transition-colors p-1.5 hover:bg-indigo-50 rounded-lg"
                   title="แก้ไขชื่อรอบ"
                 >
-                  <Edit size={18} />
+                  <Edit size={16} />
                 </button>
               )}
             </div>
             
             {isEditingTitle ? (
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  className="border border-indigo-200 rounded-xl px-4 py-3 text-base flex-grow focus:outline-none focus:ring-4 focus:ring-indigo-500/20 font-bold text-indigo-700 bg-white w-full shadow-sm transition-all"
+                  className="border border-indigo-200 rounded-xl px-4 py-2 text-lg focus:outline-none focus:ring-4 focus:ring-indigo-500/20 font-bold text-indigo-700 bg-white w-full sm:w-80 shadow-sm transition-all"
                   value={tempTitle}
                   onChange={(e) => setTempTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); }}
                   autoFocus
                 />
-                <div className="flex flex-col gap-2">
-                  <button onClick={handleSaveTitle} className="text-emerald-600 hover:bg-emerald-100 p-2 rounded-xl bg-emerald-50 transition-colors">
-                    <CheckCircle size={20} />
-                  </button>
-                  <button onClick={() => setIsEditingTitle(false)} className="text-slate-500 hover:bg-slate-200 p-2 rounded-xl bg-slate-100 transition-colors">
-                    <X size={20} />
-                  </button>
-                </div>
+                <button onClick={handleSaveTitle} className="text-emerald-600 hover:bg-emerald-100 p-2 rounded-xl bg-emerald-50 transition-colors">
+                  <CheckCircle size={20} />
+                </button>
+                <button onClick={() => setIsEditingTitle(false)} className="text-slate-500 hover:bg-slate-200 p-2 rounded-xl bg-slate-100 transition-colors">
+                  <X size={20} />
+                </button>
               </div>
             ) : (
-              <div className="font-bold text-xl text-slate-800 leading-snug">{session.title}</div>
+              <div className="font-bold text-2xl text-slate-800 leading-tight text-center sm:text-left">{session.title}</div>
             )}
-            
-            <div className="text-sm flex items-center gap-2 mt-4 text-emerald-600 font-bold bg-emerald-50 w-fit px-3 py-1.5 rounded-full border border-emerald-100">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              {session.status}
-            </div>
           </div>
-          
-          <nav className="flex md:flex-col gap-3 overflow-x-auto pb-4 md:pb-0">
-            <SidebarBtn active={adminTab === 'menu'} onClick={() => setAdminTab('menu')} icon={<Settings size={22} />} text="จัดการเมนู" />
-            <SidebarBtn active={adminTab === 'users'} onClick={() => setAdminTab('users')} icon={<Users size={22} />} text="รายชื่อ" />
-            <SidebarBtn active={adminTab === 'summary'} onClick={() => setAdminTab('summary')} icon={<ClipboardList size={22} />} text="สรุปผล" />
-            <div className="h-px bg-slate-100 my-2 hidden md:block"></div>
-            <button 
-              onClick={() => setIsPrintMode(true)}
-              className="md:w-full flex-shrink-0 flex items-center gap-4 px-5 py-4 text-base font-semibold rounded-2xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all bg-white border border-slate-200 shadow-sm hover:shadow whitespace-nowrap"
-            >
-              <Printer size={22} /> <span className="hidden md:inline">พิมพ์เอกสาร (Print)</span><span className="md:hidden">Print</span>
-            </button>
-          </nav>
+
+          <div className="text-sm flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 shadow-sm">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            {session.status}
+          </div>
         </div>
+        
+        <nav className="flex items-center gap-1 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/50 shadow-inner overflow-x-auto max-w-full no-scrollbar">
+          <NavBtn active={adminTab === 'menu'} onClick={() => setAdminTab('menu')} icon={<Settings size={20} />} text="จัดการเมนู" />
+          <NavBtn active={adminTab === 'users'} onClick={() => setAdminTab('users')} icon={<Users size={20} />} text="รายชื่อ" />
+          <NavBtn active={adminTab === 'summary'} onClick={() => setAdminTab('summary')} icon={<ClipboardList size={20} />} text="สรุปผล" />
+        </nav>
+
+        <button 
+          onClick={() => setIsPrintMode(true)}
+          className="flex items-center gap-3 px-6 py-3.5 text-base font-bold rounded-2xl text-slate-700 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:bg-slate-50 transition-all active:scale-95 whitespace-nowrap"
+        >
+          <Printer size={22} /> <span>พิมพ์เอกสาร</span>
+        </button>
       </div>
 
-      <div className="flex-grow bg-white rounded-3xl shadow-sm border border-slate-200/60 p-6 md:p-10 min-h-[600px]">
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 p-6 md:p-10 min-h-[600px] w-full">
         {adminTab === 'menu' && (
           <AdminMenuManager 
             categories={categories} menuItems={menuItems} 
@@ -453,7 +454,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto p-4 md:p-8 mt-4">
+      <main className="max-w-[1600px] mx-auto p-4 md:p-8 mt-4">
         {role === 'admin' ? (
           <AdminDashboard 
             session={session}
