@@ -321,7 +321,14 @@ export default function App() {
 
   const handleDeleteMenuItem = async (id) => {
     try {
-      await deleteDoc(doc(db, 'menuItems', id));
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'menuItems', id));
+      
+      selections.filter(s => s.menuItemId === id).forEach(s => {
+        batch.delete(doc(db, 'selections', s.id));
+      });
+      
+      await batch.commit();
       toast.success('ลบเมนูเรียบร้อยแล้ว');
     } catch (error) {
       console.error('Delete menu item error:', error);
@@ -340,7 +347,14 @@ export default function App() {
   };
 
   const handleDeleteParticipant = async (id) => {
-    await deleteDoc(doc(db, 'participants', id));
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'participants', id));
+    
+    selections.filter(s => s.participantId === id).forEach(s => {
+      batch.delete(doc(db, 'selections', s.id));
+    });
+    
+    await batch.commit();
   };
 
   const handleMoveParticipant = async (index, direction) => {

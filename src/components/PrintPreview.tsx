@@ -80,11 +80,14 @@ export function PrintPreview({ session, categories, menuItems, participants, sel
   const totals = useMemo(() => {
     const counts = {};
     menuItems.forEach(m => counts[m.id] = 0);
+    const participantIds = new Set(participants.map(p => p.id));
     selections.forEach(s => {
-      if (counts[s.menuItemId] !== undefined) counts[s.menuItemId]++;
+      if (participantIds.has(s.participantId) && counts[s.menuItemId] !== undefined) {
+        counts[s.menuItemId]++;
+      }
     });
     return counts;
-  }, [menuItems, selections]);
+  }, [menuItems, selections, participants]);
 
   useEffect(() => {
     setPrintSubtitle(`รอบ: ${session.title}`);

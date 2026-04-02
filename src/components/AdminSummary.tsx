@@ -31,23 +31,30 @@ function AdminNoteInput({ initialNote, onSave }) {
 }
 
 export function AdminSummary({ categories, menuItems, participants, selections, onSaveSelection, onBulkSaveSelections }) {
-  const [localSelections, setLocalSelections] = useState(selections);
+  const [localSelections, setLocalSelections] = useState(() => {
+    const participantIds = new Set(participants.map(p => p.id));
+    return selections.filter(s => participantIds.has(s.participantId));
+  });
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     if (!isDirty) {
-      setLocalSelections(selections);
+      const participantIds = new Set(participants.map(p => p.id));
+      setLocalSelections(selections.filter(s => participantIds.has(s.participantId)));
     }
-  }, [selections, isDirty]);
+  }, [selections, isDirty, participants]);
 
   const totals = useMemo(() => {
     const counts = {};
     menuItems.forEach(m => counts[m.id] = 0);
+    const participantIds = new Set(participants.map(p => p.id));
     localSelections.forEach(s => {
-      if (counts[s.menuItemId] !== undefined) counts[s.menuItemId]++;
+      if (participantIds.has(s.participantId) && counts[s.menuItemId] !== undefined) {
+        counts[s.menuItemId]++;
+      }
     });
     return counts;
-  }, [menuItems, localSelections]);
+  }, [menuItems, localSelections, participants]);
 
   const handleCellClick = (participantId, categoryId, menuItemId) => {
     const userSelections = localSelections.filter(s => s.participantId === participantId);
@@ -100,7 +107,8 @@ export function AdminSummary({ categories, menuItems, participants, selections, 
   };
 
   const handleDiscardChanges = () => {
-    setLocalSelections(selections);
+    const participantIds = new Set(participants.map(p => p.id));
+    setLocalSelections(selections.filter(s => participantIds.has(s.participantId)));
     setIsDirty(false);
   };
 

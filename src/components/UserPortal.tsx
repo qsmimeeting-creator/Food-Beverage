@@ -93,9 +93,10 @@ export function UserPortal({ session, categories, menuItems, participants, selec
   const totals = useMemo(() => {
     const counts = {};
     menuItems.forEach(m => counts[m.id] = 0);
+    const participantIds = new Set(participants.map(p => p.id));
     
     selections.forEach(s => {
-      if (s.participantId !== currentUserId && counts[s.menuItemId] !== undefined) {
+      if (participantIds.has(s.participantId) && s.participantId !== currentUserId && counts[s.menuItemId] !== undefined) {
         counts[s.menuItemId]++;
       }
     });
@@ -107,7 +108,7 @@ export function UserPortal({ session, categories, menuItems, participants, selec
     });
 
     return counts;
-  }, [menuItems, selections, currentUserId, formData]);
+  }, [menuItems, selections, currentUserId, formData, participants]);
 
   const filteredParticipants = useMemo(() => {
     if (!searchQuery) return participants;
