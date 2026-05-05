@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ClipboardList, CheckCircle, Info, Trash2 } from 'lucide-react';
+import { ClipboardList, CheckCircle, Info, Trash2, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 function AdminNoteInput({ initialNote, onSave }) {
@@ -36,6 +36,7 @@ export function AdminSummary({ categories, menuItems, participants, selections, 
     return selections.filter(s => participantIds.has(s.participantId));
   });
   const [isDirty, setIsDirty] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   useEffect(() => {
     if (!isDirty) {
@@ -113,15 +114,47 @@ export function AdminSummary({ categories, menuItems, participants, selections, 
   };
 
   const handleClearAll = () => {
-    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลการเลือกทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
-      onClearAllSelections();
-      setLocalSelections([]);
-      setIsDirty(false);
-    }
+    setShowClearModal(true);
+  };
+
+  const confirmClearAll = () => {
+    onClearAllSelections();
+    setLocalSelections([]);
+    setIsDirty(false);
+    setShowClearModal(false);
   };
 
   return (
     <div className="animate-in fade-in duration-300">
+      {showClearModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-10 w-full max-w-md border border-slate-100 transform transition-all scale-100">
+            <h3 className="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-4">
+              <div className="bg-rose-100 p-3 rounded-2xl text-rose-600">
+                <AlertTriangle size={28} />
+              </div>
+              ล้างข้อมูลทั้งหมด
+            </h3>
+            <p className="text-base text-slate-500 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลการเลือกทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="px-6 py-3 rounded-xl text-slate-500 hover:bg-slate-100 font-bold text-base transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={confirmClearAll}
+                className="px-8 py-3 rounded-xl bg-rose-600 text-white hover:bg-rose-700 font-bold text-base transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+              >
+                ล้างข้อมูล
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-800">
