@@ -74,7 +74,8 @@ function NavBtn({ active, onClick, icon, text }) {
 function AdminDashboard({ 
   session, categories, menuItems, participants, selections, 
   adminTab, setAdminTab, setIsPrintMode, onUpdateSession, onSaveSelection, onBulkSaveSelections,
-  onAddCategory, onDeleteCategory, onUpdateCategory, onAddMenuItem, onDeleteMenuItem, onUpdateMenuItem, onAddParticipant, onDeleteParticipant, onMoveParticipant, onUpdateParticipant
+  onAddCategory, onDeleteCategory, onUpdateCategory, onAddMenuItem, onDeleteMenuItem, onUpdateMenuItem, 
+  onAddParticipant, onDeleteParticipant, onMoveParticipant, onUpdateParticipant, onClearAllSelections
 }) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(session?.title || '');
@@ -167,7 +168,8 @@ function AdminDashboard({
         )}
         {adminTab === 'summary' && (
           <AdminSummary 
-            categories={categories} menuItems={menuItems} participants={participants} selections={selections} onSaveSelection={onSaveSelection} onBulkSaveSelections={onBulkSaveSelections}
+            categories={categories} menuItems={menuItems} participants={participants} selections={selections} 
+            onSaveSelection={onSaveSelection} onBulkSaveSelections={onBulkSaveSelections} onClearAllSelections={onClearAllSelections}
           />
         )}
       </div>
@@ -376,6 +378,20 @@ export default function App() {
     await updateDoc(doc(db, 'participants', id), { name: newName });
   };
 
+  const handleClearAllSelections = async () => {
+    try {
+      const batch = writeBatch(db);
+      selections.forEach(s => {
+        batch.delete(doc(db, 'selections', s.id));
+      });
+      await batch.commit();
+      toast.success('ล้างข้อมูลการเลือกทั้งหมดเรียบร้อยแล้ว');
+    } catch (error) {
+      console.error('Clear all selections error:', error);
+      toast.error('ไม่สามารถล้างข้อมูลได้');
+    }
+  };
+
   const handleAdminLogin = () => {
     const correctPassword = import.meta.env.VITE_ADMIN_PASSWORD || '1234';
     if (adminPassword === correctPassword) {
@@ -492,6 +508,7 @@ export default function App() {
             onDeleteParticipant={handleDeleteParticipant}
             onMoveParticipant={handleMoveParticipant}
             onUpdateParticipant={handleUpdateParticipant}
+            onClearAllSelections={handleClearAllSelections}
           />
         ) : (
           <UserPortal 

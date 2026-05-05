@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ClipboardList, CheckCircle, Info } from 'lucide-react';
+import { ClipboardList, CheckCircle, Info, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 function AdminNoteInput({ initialNote, onSave }) {
@@ -30,7 +30,7 @@ function AdminNoteInput({ initialNote, onSave }) {
   );
 }
 
-export function AdminSummary({ categories, menuItems, participants, selections, onSaveSelection, onBulkSaveSelections }) {
+export function AdminSummary({ categories, menuItems, participants, selections, onSaveSelection, onBulkSaveSelections, onClearAllSelections }) {
   const [localSelections, setLocalSelections] = useState(() => {
     const participantIds = new Set(participants.map(p => p.id));
     return selections.filter(s => participantIds.has(s.participantId));
@@ -112,6 +112,14 @@ export function AdminSummary({ categories, menuItems, participants, selections, 
     setIsDirty(false);
   };
 
+  const handleClearAll = () => {
+    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลการเลือกทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+      onClearAllSelections();
+      setLocalSelections([]);
+      setIsDirty(false);
+    }
+  };
+
   return (
     <div className="animate-in fade-in duration-300">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
@@ -133,8 +141,18 @@ export function AdminSummary({ categories, menuItems, participants, selections, 
             </button>
           </div>
         ) : (
-          <div className="text-sm text-indigo-700 bg-indigo-50/80 border border-indigo-100 px-5 py-3 rounded-xl flex items-center gap-3 font-medium w-full md:w-auto justify-center shadow-sm">
-            <Info size={18} className="flex-shrink-0 text-indigo-500" /> Admin สามารถคลิกแก้ไขตารางและกดบันทึกได้
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="text-sm text-indigo-700 bg-indigo-50/80 border border-indigo-100 px-5 py-3 rounded-xl flex items-center gap-3 font-medium flex-1 justify-center shadow-sm">
+              <Info size={18} className="flex-shrink-0 text-indigo-500" /> Admin สามารถคลิกแก้ไขตารางและกดบันทึกได้
+            </div>
+            {selections.length > 0 && (
+              <button 
+                onClick={handleClearAll}
+                className="flex items-center gap-2 px-6 py-3 text-base font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all border border-rose-100 shadow-sm whitespace-nowrap"
+              >
+                <Trash2 size={20} /> ล้างข้อมูลทั้งหมด
+              </button>
+            )}
           </div>
         )}
       </div>
