@@ -32,7 +32,7 @@ export function UserPortal({ session, categories, menuItems, participants, selec
       setGeneralNote('');
       setIsSubmitted(false);
     }
-  }, [currentUserId, selections]); 
+  }, [currentUserId]); // Removed selections from dependencies
 
   const handleCellClick = (categoryId, menuItemId) => {
     if (!currentUserId) {
